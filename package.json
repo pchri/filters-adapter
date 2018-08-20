@@ -1,0 +1,77 @@
+{
+  "name": "countdown-timer-adapter",
+  "display_name": "Countdown Timers",
+  "version": "0.0.0",
+  "description": "Adapter for Mozilla IoT Gateway implementing various timers as (virtual) devices",
+  "author": "Poul Christiansen",
+  "main": "index.js",
+  "keywords": [
+    "mozilla",
+    "iot",
+    "adapter",
+    "timer",
+    "countdown"
+  ],
+  "homepage": "https://github.com/pchri/countdown-timer-adapter",
+  "license": "MPL-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pchri/countdown-timer-adapter"
+  },
+  "bugs": {
+    "url": "https://github.com/pchri/countdown-timer-adapter/issues"
+  },
+  "devDependencies": {
+    "eslint": "^4.19.1"
+  },
+  "files": [
+    "LICENSE",
+    "SHA256SUMS",
+    "countdown-timer-adapter.js",
+    "index.js"
+  ],
+  "moziot": {
+    "api": {
+      "min": 2,
+      "max": 2
+    },
+    "plugin": true,
+    "exec": "{nodeLoader} {path}",
+    "config": {
+      "devices": [
+      ]
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "devices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name", "type", "time"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The name of this Timer device"
+              },
+              "type": {
+                "type": "string",
+                "description": "The type of this Timer device",
+                "enum": [
+                  "countdown"
+                ]
+              },
+              "time": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "The time value (in seconds) for this Timer device"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
