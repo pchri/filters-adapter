@@ -10,7 +10,7 @@
 
 const {
   Adapter,
-  Constants,
+  // Constants,
   Database,
   Device,
   Property,
@@ -33,10 +33,13 @@ class CountdownTimerProperty extends Property {
    * the value passed in.
    */
   setValue(value) {
+    let changed = this.value !== value;
     return new Promise((resolve, reject) => {
       super.setValue(value).then((updatedValue) => {
         resolve(updatedValue);
-        this.device.notifyPropertyChanged(this);
+        if (changed) {
+          this.device.notifyPropertyChanged(this);
+        }
       }).catch((err) => {
         reject(err);
       });
@@ -49,6 +52,7 @@ class CountdownTimerDevice extends Device {
     super(adapter, id);
     this.name = deviceDescription.name;
     this.type = deviceDescription.type;
+    this.timer = null;
     this['@type'] = deviceDescription['@type'];
     this.description = deviceDescription.description;
     for (const propertyName in deviceDescription.properties) {
@@ -57,6 +61,36 @@ class CountdownTimerDevice extends Device {
                                            propertyDescription);
       this.properties.set(propertyName, property);
     }
+  }
+
+  /**
+   * When a property changes see if the timer should be started or stopped
+   * @param {CountdownTimerProperty} property
+   */
+  notifyPropertyChanged(property) {
+    super.notifyPropertyChanged(property);
+    if (property.name == 'input') {
+      if (property.value) {
+        if (this.timer) {
+          clearTimeout(this.timer);
+          this.timer = null;
+        }
+        this.setProperty('output', true);
+      }
+      else {
+        var that = this
+        const seconds = this.findProperty('time').value;
+        this.timer = setTimeout(() => { that.timeoutHandler(); }, seconds*1000);
+      }
+    }
+  }
+
+  /**
+   * The countdown timer has fired. Reset output
+   */
+  timeoutHandler() {
+    this.setProperty('output', false);
+    this.timer = null;
   }
 }
 
@@ -69,12 +103,44 @@ class CountdownTimerAdapter extends Adapter {
       const db = new Database(packageName);
       promise = db.open().then( () => {
         return db.loadConfig();
-      });
+      }).then( (config) => { 
+        return Promise.all(config["devices"].map(this.addDeviceFromConfig, this));
+      }).then();
     }
-    else {
-      promise = Promise.resolve();
-    }
-    promise.then( (config) => { console.log('### CountdownTimerAdapter: config loaded: ', config); } );
+  }
+
+  addDeviceFromConfig(conf) {
+    // console.log("Promissing to add ", conf);
+    return this.addDevice('countdown-timer-device-'+conf['name'], {
+      name: conf['name'],
+      '@type': ['Light', 'OnOffSwitch'],
+      type: 'filter',
+      description: 'Countdown Timer Device',
+      properties: {
+        time: {
+          '@type': 'Number',
+          label: 'Time',
+          name: 'time',
+          type: 'integer',
+          unit: 'seconds',
+          value: conf['time']
+        },
+        output: {
+          '@type': 'OnOffProperty',
+          label: 'Output',
+          name: 'output',
+          type: 'boolean',
+          value: false
+        },
+        input: {
+          '@type': 'OnOffProperty',
+          label: 'Input',
+          name: 'input',
+          type: 'boolean',
+          value: false
+        }
+      }
+    });
   }
 
   /**
@@ -169,24 +235,6 @@ class CountdownTimerAdapter extends Adapter {
 
 function loadCountdownTimerAdapter(addonManager, manifest, _errorCallback) {
   const adapter = new CountdownTimerAdapter(addonManager, manifest.name);
-  /*
-  const device = new ExampleDevice(adapter, 'example-plug-2', {
-    name: 'example-plug-2',
-    '@type': ['OnOffSwitch'],
-    type: 'onOffSwitch',
-    description: 'Example Device',
-    properties: {
-      on: {
-        '@type': 'OnOffProperty',
-        label: 'On/Off',
-        name: 'on',
-        type: 'boolean',
-        value: false,
-      },
-    },
-  });
-  adapter.handleDeviceAdded(device);
-  */
 }
 
 module.exports = loadCountdownTimerAdapter;
