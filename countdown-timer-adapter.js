@@ -10,7 +10,6 @@
 
 const {
   Adapter,
-  // Constants,
   Database,
   Device,
   Property,
@@ -111,7 +110,7 @@ class CountdownTimerAdapter extends Adapter {
 
   addDeviceFromConfig(conf) {
     // console.log("Promissing to add ", conf);
-    return this.addDevice('countdown-timer-device-'+conf['name'], {
+    return this.addDevice('countdown-timer-device-'+conf['name'].replace(/\s+|%/g, '-'), {
       name: conf['name'],
       '@type': ['Light', 'OnOffSwitch'],
       type: 'filter',
@@ -185,51 +184,17 @@ class CountdownTimerAdapter extends Adapter {
   }
 
   /**
-   * Start the pairing/discovery process.
-   *
-   * @param {Number} timeoutSeconds Number of seconds to run before timeout
-   */
-   /*
-  startPairing(_timeoutSeconds) {
-    console.log('ExampleAdapter:', this.name,
-                'id', this.id, 'pairing started');
-  }
-  */
-  /**
-   * Cancel the pairing/discovery process.
-   */
-   /*
-  cancelPairing() {
-    console.log('ExampleAdapter:', this.name, 'id', this.id,
-                'pairing cancelled');
-  }
-  */
-
-  /**
    * Unpair the provided the device from the adapter.
    *
    * @param {Object} device Device to unpair with
    */
   removeThing(device) {
-    console.log('ExampleAdapter:', this.name, 'id', this.id,
-                'removeThing(', device.id, ') started');
-
     this.removeDevice(device.id).then(() => {
       console.log('CountdownTimerAdapter: device:', device.id, 'was unpaired.');
     }).catch((err) => {
       console.error('CountdownTimerAdapter: unpairing', device.id, 'failed');
       console.error(err);
     });
-  }
-
-  /**
-   * Cancel unpairing process.
-   *
-   * @param {Object} device Device that is currently being paired
-   */
-  cancelRemoveThing(device) {
-    console.log('CountdownTimerAdapter:', this.name, 'id', this.id,
-                'cancelRemoveThing(', device.id, ')');
   }
 }
 
