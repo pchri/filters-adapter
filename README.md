@@ -22,6 +22,6 @@ Obviously CountdownTimer devices cannot be discovered by scanning for new device
 ## Rules
 To use the device you add two Rules.
 
-One for the input, connecting some switch or sensor to the input property of the filer.
+One for the input, connecting some switch or sensor to the input property of the filter.
 
-One for the output, connection the output property of the filter to some light or your toaster.
+One for the output, connecting the output property of the filter to some light or your toaster.
