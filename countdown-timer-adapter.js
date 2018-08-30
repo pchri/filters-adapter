@@ -109,8 +109,7 @@ class CountdownTimerAdapter extends Adapter {
   }
 
   addDeviceFromConfig(conf) {
-    // console.log("Promissing to add ", conf);
-    return this.addDevice('countdown-timer-device-'+conf['name'].replace(/\s+|%/g, '-'), {
+    return this.addDevice('countdown-timer-device-'+conf['name'], {
       name: conf['name'],
       '@type': ['Light', 'OnOffSwitch'],
       type: 'filter',
@@ -164,7 +163,7 @@ class CountdownTimerAdapter extends Adapter {
   }
 
   /**
-   * Example process ro remove a device from the adapter.
+   * Example process to remove a device from the adapter.
    *
    * The important part is to call: `this.handleDeviceRemoved(device)`
    *
