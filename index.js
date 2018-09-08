@@ -8,4 +8,4 @@
 
 'use strict';
 
-module.exports = require('./countdown-timer-adapter');
+module.exports = require('./filters-adapter');

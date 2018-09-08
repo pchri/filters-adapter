@@ -1,5 +1,5 @@
 /**
- * countdown-timer-adapter.js - Countdown Timer adapter.
+ * filters-adapter.js - Filters adapter.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,7 +15,7 @@ const {
   Property,
 } = require('gateway-addon');
 
-class CountdownTimerProperty extends Property {
+class FiltersProperty extends Property {
   constructor(device, name, propertyDescription) {
     super(device, name, propertyDescription);
     this.setCachedValue(propertyDescription.value);
@@ -46,56 +46,159 @@ class CountdownTimerProperty extends Property {
   }
 }
 
-class CountdownTimerDevice extends Device {
-  constructor(adapter, id, deviceDescription) {
+/* abstract */ 
+class FiltersDevice extends Device {
+  constructor(adapter, id, conf) {
     super(adapter, id);
-    this.name = deviceDescription.name;
-    this.type = deviceDescription.type;
+    this.name = conf['name'];
+    this.type = 'filter';
     this.timer = null;
-    this['@type'] = deviceDescription['@type'];
-    this.description = deviceDescription.description;
-    for (const propertyName in deviceDescription.properties) {
-      const propertyDescription = deviceDescription.properties[propertyName];
-      const property = new CountdownTimerProperty(this, propertyName,
-                                           propertyDescription);
-      this.properties.set(propertyName, property);
+    this['@type'] = ['Light', 'OnOffSwitch'];
+    this.properties.set('time', new FiltersProperty(this, 'time', {
+      '@type': 'Number',
+      label: 'Time',
+      name: 'time',
+      type: 'integer',
+      unit: 'seconds',
+      value: conf['time']
+    }));
+    this.properties.set('output', new FiltersProperty(this, 'output', {
+      '@type': 'OnOffProperty',
+      label: 'Output',
+      name: 'output',
+      type: 'boolean',
+      value: false
+    }));
+    this.properties.set('input', new FiltersProperty(this, 'input', {
+      '@type': 'OnOffProperty',
+      label: 'Input',
+      name: 'input',
+      type: 'boolean',
+      value: false
+    }));
+  }
+
+  /**
+   * Start a timer with a duration from the time property.
+   * Call timeoutHandler() when timer fires
+   */
+  startTimer() {
+    var that = this
+    const seconds = this.findProperty('time').value;
+    this.timer = setTimeout(() => { that.timeoutHandler(); }, seconds*1000);    
+  }
+
+  /**
+   * Stop the timer if it is running.
+   */
+  stopTimer() {
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
     }
   }
 
   /**
+   * Common behaviour the the timer fires.
+   * Reset output
+   */
+  timeoutHandler() {
+    this.setProperty('output', false);
+    this.timer = null;
+  }  
+}
+
+class CountdownTimerDevice extends FiltersDevice {
+  constructor(adapter, id, conf) {
+    super(adapter, id, conf);
+    this.description = 'Countdown Timer';
+  }
+
+  /**
    * When a property changes see if the timer should be started or stopped
-   * @param {CountdownTimerProperty} property
+   * @param {FiltersProperty} property
    */
   notifyPropertyChanged(property) {
     super.notifyPropertyChanged(property);
     if (property.name == 'input') {
       if (property.value) {
-        if (this.timer) {
-          clearTimeout(this.timer);
-          this.timer = null;
-        }
+        this.stopTimer();
         this.setProperty('output', true);
       }
       else {
-        var that = this
-        const seconds = this.findProperty('time').value;
-        this.timer = setTimeout(() => { that.timeoutHandler(); }, seconds*1000);
+        this.startTimer();
+      }
+    }
+  }
+}
+
+class LeadingEdgeDetectorDevice extends FiltersDevice {
+  constructor(adapter, id, conf) {
+    super(adapter, id, conf);
+    this.description = 'Leading Edge Detector';    
+  }
+
+  /**
+   * When a property changes see if the timer should be started or stopped
+   * @param {FiltersProperty} property
+   */
+  notifyPropertyChanged(property) {
+    super.notifyPropertyChanged(property);
+    if (property.name == 'input' && property.value) {
+      if (this.timer == null) {
+        this.startTimer();
+      }
+      this.setProperty('output', true);
+    }
+  }
+}
+
+class SquareWaveDevice extends FiltersDevice {
+  constructor(adapter, id, conf) {
+    super(adapter, id, conf);
+    this.description = 'Square Wave Generator';    
+  }
+
+  /**
+   * For SquareWaveDevice use setInterval for the timer.
+   * Call timeoutHandler() when timer fires
+   */
+  startTimer() {
+    var that = this
+    const seconds = this.findProperty('time').value;
+    this.timer = setInterval(() => { that.timeoutHandler(); }, seconds*1000);    
+  }
+
+  /**
+   * When a property changes see if the timer should be started or stopped
+   * @param {FiltersProperty} property
+   */
+  notifyPropertyChanged(property) {
+    super.notifyPropertyChanged(property);
+    if (property.name == 'input') {
+      if (property.value) {
+        this.setProperty('output', true);
+        this.startTimer();
+      }
+      else {
+        this.setProperty('output', false);
+        this.stopTimer();
       }
     }
   }
 
   /**
-   * The countdown timer has fired. Reset output
+   * Special behaviour for SquareWaveDevice. 
+   * Toggle Output.
    */
   timeoutHandler() {
-    this.setProperty('output', false);
-    this.timer = null;
-  }
+    this.setProperty('output', !this.getProperty('output'));
+  }  
 }
 
-class CountdownTimerAdapter extends Adapter {
+class FiltersAdapter extends Adapter {
   constructor(addonManager, packageName) {
-    super(addonManager, 'CountdownTimerAdapter', packageName);
+    super(addonManager, 'FiltersAdapter', packageName);
     addonManager.addAdapter(this);
     let promise;
     if (Database) {
@@ -109,53 +212,42 @@ class CountdownTimerAdapter extends Adapter {
   }
 
   addDeviceFromConfig(conf) {
-    return this.addDevice('countdown-timer-device-'+conf['name'], {
-      name: conf['name'],
-      '@type': ['Light', 'OnOffSwitch'],
-      type: 'filter',
-      description: 'Countdown Timer Device',
-      properties: {
-        time: {
-          '@type': 'Number',
-          label: 'Time',
-          name: 'time',
-          type: 'integer',
-          unit: 'seconds',
-          value: conf['time']
-        },
-        output: {
-          '@type': 'OnOffProperty',
-          label: 'Output',
-          name: 'output',
-          type: 'boolean',
-          value: false
-        },
-        input: {
-          '@type': 'OnOffProperty',
-          label: 'Input',
-          name: 'input',
-          type: 'boolean',
-          value: false
-        }
-      }
-    });
+    let device;
+    const deviceId = 'filters-device-'+conf['name'];
+    if (conf['type'] == 'countdown')
+    {
+      device = new CountdownTimerDevice(this, deviceId, conf);
+    }
+    else if (conf['type'] == 'edge detector')
+    {
+      device = new LeadingEdgeDetectorDevice(this, deviceId, conf);
+    }
+    else if (conf['type'] == 'square wave')
+    {
+      device = new SquareWaveDevice(this, deviceId, conf);
+    }
+    else
+    {
+      console.error('-----What device? ', conf['type']);
+      return new Promise();
+    }
+    return this.addDevice(deviceId, device);
   }
 
   /**
-   * Example process to add a new device to the adapter.
+   * Add a new device to the adapter.
    *
    * The important part is to call: `this.handleDeviceAdded(device)`
    *
    * @param {String} deviceId ID of the device to add.
-   * @param {String} deviceDescription Description of the device to add.
+   * @param {device} device to add
    * @return {Promise} which resolves to the device added.
    */
-  addDevice(deviceId, deviceDescription) {
+  addDevice(deviceId, device) {
     return new Promise((resolve, reject) => {
       if (deviceId in this.devices) {
         reject(`Device: ${deviceId} already exists.`);
       } else {
-        const device = new CountdownTimerDevice(this, deviceId, deviceDescription);
         this.handleDeviceAdded(device);
         resolve(device);
       }
@@ -189,16 +281,16 @@ class CountdownTimerAdapter extends Adapter {
    */
   removeThing(device) {
     this.removeDevice(device.id).then(() => {
-      console.log('CountdownTimerAdapter: device:', device.id, 'was unpaired.');
+      console.log('FiltersAdapter: device:', device.id, 'was unpaired.');
     }).catch((err) => {
-      console.error('CountdownTimerAdapter: unpairing', device.id, 'failed');
+      console.error('FiltersAdapter: unpairing', device.id, 'failed');
       console.error(err);
     });
   }
 }
 
-function loadCountdownTimerAdapter(addonManager, manifest, _errorCallback) {
-  const adapter = new CountdownTimerAdapter(addonManager, manifest.name);
+function loadFiltersAdapter(addonManager, manifest, _errorCallback) {
+  const adapter = new FiltersAdapter(addonManager, manifest.name);
 }
 
-module.exports = loadCountdownTimerAdapter;
+module.exports = loadFiltersAdapter;
