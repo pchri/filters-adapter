@@ -78,6 +78,10 @@ class FiltersDevice extends Device {
     }));
   }
 
+  unload() {
+    this.stopTimer();
+  }
+
   /**
    * Start a timer with a duration from the time property.
    * Call timeoutHandler() when timer fires
@@ -192,7 +196,7 @@ class SquareWaveDevice extends FiltersDevice {
    * Toggle Output.
    */
   timeoutHandler() {
-    this.setProperty('output', !this.getProperty('output'));
+    this.setProperty('output', !this.findProperty('output').value);
   }  
 }
 
@@ -211,25 +215,34 @@ class FiltersAdapter extends Adapter {
     }
   }
 
+  /**
+   * The adapter is being unloaded.
+   * Return a Promise that resolves when unloading is done
+   */
+  unload() {
+    let devname;
+    for (devname in this.getDevices()) {
+      this.getDevice(devname).unload();
+    }
+    return super.unload();
+  }
+
   addDeviceFromConfig(conf) {
     let device;
     const deviceId = 'filters-device-'+conf['name'];
-    if (conf['type'] == 'countdown')
-    {
-      device = new CountdownTimerDevice(this, deviceId, conf);
-    }
-    else if (conf['type'] == 'edge detector')
-    {
-      device = new LeadingEdgeDetectorDevice(this, deviceId, conf);
-    }
-    else if (conf['type'] == 'square wave')
-    {
-      device = new SquareWaveDevice(this, deviceId, conf);
-    }
-    else
-    {
-      console.error('-----What device? ', conf['type']);
-      return new Promise();
+    switch (conf['type']) {
+      case 'countdown':
+        device = new CountdownTimerDevice(this, deviceId, conf);
+        break;
+      case 'edge detector':
+        device = new LeadingEdgeDetectorDevice(this, deviceId, conf);
+        break;
+      case 'square wave':
+        device = new SquareWaveDevice(this, deviceId, conf);
+        break;
+      default:
+        console.error('FiltersAdapter: what device? ', conf['type']);
+        return new Promise();
     }
     return this.addDevice(deviceId, device);
   }
