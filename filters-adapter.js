@@ -157,6 +157,24 @@ class LeadingEdgeDetectorDevice extends FiltersDevice {
   }
 }
 
+class FlipFlopDevice extends FiltersDevice {
+  constructor(adapter, id, conf) {
+    super(adapter, id, conf);
+    this.description = 'Flip-Flop';    
+  }
+
+  /**
+   * When a property changes see if the timer should be started or stopped
+   * @param {FiltersProperty} property
+   */
+  notifyPropertyChanged(property) {
+    super.notifyPropertyChanged(property);
+    if (property.name == 'input' && property.value) {
+      this.setProperty('output', !this.findProperty('output').value);
+    }
+  }
+}
+
 class SquareWaveDevice extends FiltersDevice {
   constructor(adapter, id, conf) {
     super(adapter, id, conf);
@@ -236,6 +254,9 @@ class FiltersAdapter extends Adapter {
         break;
       case 'edge detector':
         device = new LeadingEdgeDetectorDevice(this, deviceId, conf);
+        break;
+      case 'flip-flop':
+        device = new FlipFlopDevice(this, deviceId, conf);
         break;
       case 'square wave':
         device = new SquareWaveDevice(this, deviceId, conf);

@@ -64,6 +64,7 @@
                 "enum": [
                   "countdown",
                   "edge detector",
+                  "flip-flop",
                   "square wave"
                 ]
               },

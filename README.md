@@ -4,6 +4,7 @@ Adapter for Mozilla IoT Gateway implementing various filters as (virtual) device
 Version 0.0.0 implements
 - a simple countdown timer
 - a leading edge detector
+- a flip-flop
 - a square wave generator
 
 ## Countdown Timer
@@ -27,6 +28,16 @@ output: 0000111111110000000000000000000000000000
 ```
 
 So the output is active for some time after the input becomes active.
+
+## Flip-Flop
+Basically each device has an input and an output and works like this:
+
+```
+input:  0010101010101000000110011001100110011001100
+output: 0011001100110000000111100001111000011110000
+```
+
+So the output changes every time the input changes from off to on. The time property is not used.
 
 ## Square Wave Generator
 The input activates the generator
