@@ -87,9 +87,10 @@ class FiltersDevice extends Device {
    * Call timeoutHandler() when timer fires
    */
   startTimer() {
-    var that = this
+    this.stopTimer();
     const seconds = this.findProperty('time').value;
-    this.timer = setTimeout(() => { that.timeoutHandler(); }, seconds*1000);    
+    var self = this;
+    this.timer = setTimeout(() => { self.timeoutHandler(); }, seconds*1000);    
   }
 
   /**
@@ -160,7 +161,8 @@ class LeadingEdgeDetectorDevice extends FiltersDevice {
 class FlipFlopDevice extends FiltersDevice {
   constructor(adapter, id, conf) {
     super(adapter, id, conf);
-    this.description = 'Flip-Flop';    
+    this.description = 'Flip-Flop';
+    this.lastSeen = false;    
   }
 
   /**
@@ -168,10 +170,13 @@ class FlipFlopDevice extends FiltersDevice {
    * @param {FiltersProperty} property
    */
   notifyPropertyChanged(property) {
-    super.notifyPropertyChanged(property);
-    if (property.name == 'input' && property.value) {
-      this.setProperty('output', !this.findProperty('output').value);
+    if (property.name == 'input') {
+      if (property.value && !this.lastSeen) {
+        this.setProperty('output', !this.findProperty('output').value);
+      }
+      this.lastSeen = property.value;
     }
+    super.notifyPropertyChanged(property);
   }
 }
 
@@ -186,9 +191,10 @@ class SquareWaveDevice extends FiltersDevice {
    * Call timeoutHandler() when timer fires
    */
   startTimer() {
-    var that = this
+    this.stopTimer();
     const seconds = this.findProperty('time').value;
-    this.timer = setInterval(() => { that.timeoutHandler(); }, seconds*1000);    
+    var self = this
+    this.timer = setInterval(() => { self.timeoutHandler(); }, seconds*1000);    
   }
 
   /**

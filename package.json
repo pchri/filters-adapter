@@ -1,7 +1,7 @@
 {
   "name": "filters-adapter",
   "display_name": "Filters and Timers",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Various filters and timers as (virtual) devices",
   "author": "Poul Christiansen",
   "main": "index.js",

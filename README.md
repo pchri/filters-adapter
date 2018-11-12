@@ -1,7 +1,7 @@
 # FiltersAdapter
 Adapter for Mozilla IoT Gateway implementing various filters as (virtual) devices
 
-Version 0.0.0 implements
+Version 0.1.0 implements
 - a simple countdown timer
 - a leading edge detector
 - a flip-flop
